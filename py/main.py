@@ -47,7 +47,9 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
 
             img_field = playground_img_source[y:y+h, x:x+w]
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
-            # img_field = cv2.cvtColor(img_field, cv2.COLOR_BGR2GRAY)
+
+            if len(img_field) == 3:
+                img_field = cv2.cvtColor(img_field, cv2.COLOR_BGR2GRAY)
 
             field_data = np\
                 .array(img_field)\
