@@ -113,8 +113,8 @@ def throw_exception(err):
     raise Exception(err['title'])
 
 
-# Return image of top chessboard perspective from input image
-# Returned image has attempt gray and gauss filter
+# Return all steps images
+# Playground image has attempt gray and gauss filter
 def main(args):
     kernel = np.ones((5, 5), np.uint8)
     CONFIGURATION = global_configuration.get()
@@ -201,7 +201,7 @@ def main(args):
             "DEBUG_MODE": CONFIGURATION["DEBUG_MODE"]
         })
 
-    return img_steps_results['playground']
+    return img_steps_results
 
 
 if __name__ == '__main__':
