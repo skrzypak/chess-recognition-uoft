@@ -14,7 +14,7 @@ import chess.svg
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 
-# import tensorflow as tf
+import tensorflow as tf
 from py.function import gen_stack_images
 
 chessboard_rows_labels = ["8", "7", "6", "5", "4", "3", "2", "1"]
@@ -33,42 +33,36 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
         [0, 0, 0, 0, 0, 0, 0, 0]
     ]
 
-    for i in range(8):
-        for j in range(8):
-            result_matrix[i][j] = CONFIGURATION["PIECES_CATEGORIES"][0]
+    w, h = playground_img_source.shape
+    w = int(w / 8)
+    h = int(h / 8)
 
-    # y = 0
-    # x = 0
-    # w, h = playground_img_source.shape
-    # w = int(w / 8)
-    # h = int(h / 8)
-    #
-    # fields_log_dir = curr_log_dir + 'fields/'
-    # os.mkdir(fields_log_dir)
-    #
-    # for i in range(8):
-    #     y = i * h
-    #     for j in range(8):
-    #         x = j * w
-    #
-    #         img_field = playground_img_source[y:y+h, x:x+w]
-    #         img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
-    #         img_field = cv2.cvtColor(img_field, cv2.COLOR_BGR2GRAY)
-    #
-    #         field_data = np\
-    #             .array(img_field)\
-    #             .reshape(-1, CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"], 1)
-    #         field_data = field_data / 255.0
-    #
-    #         # AI RECOGNITION
-    #         model_out = model.predict(field_data)[0]
-    #         arg = np.argmax(model_out)
-    #         piece_category = CONFIGURATION["PIECES_CATEGORIES"][arg]
-    #         result_matrix[i][j] = piece_category
-    #
-    #         # Show cropped field
-    #         field_name = str(chessboard_cols_labels[j]) + str(chessboard_rows_labels[i]) + '_' + str(piece_category)
-    #         cv2.imwrite(os.path.join(fields_log_dir, field_name + '.png'), img_field)
+    curr_log_dir += '/fields'
+    os.mkdir(curr_log_dir)
+
+    for i in range(8):
+        y = i * h
+        for j in range(8):
+            x = j * w
+
+            img_field = playground_img_source[y:y+h, x:x+w]
+            img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
+            # img_field = cv2.cvtColor(img_field, cv2.COLOR_BGR2GRAY)
+
+            field_data = np\
+                .array(img_field)\
+                .reshape(-1, CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"], 1)
+            field_data = field_data / 255.0
+
+            # AI RECOGNITION
+            model_out = model.predict(field_data)[0]
+            arg = np.argmax(model_out)
+            piece_category = CONFIGURATION["PIECES_CATEGORIES"][arg]
+            result_matrix[i][j] = piece_category
+
+            # Save analysed field to debugs
+            field_name = str(chessboard_cols_labels[j]) + str(chessboard_rows_labels[i]) + '_' + str(piece_category)
+            cv2.imwrite(os.path.join(curr_log_dir, field_name + '.png'), img_field)
 
     return result_matrix
 
@@ -119,16 +113,17 @@ def svg_2_png(_path_svg, curr_log_dir):
 
 if __name__ == '__main__':
 
-    # if not os.path.isdir('../tf/models/chess-piece-0.001-2conv-basic.model'):
-    #     print("Directory with .model file not found")
-    #     print(quit)
-    #     quit()
+    if not os.path.isdir('tf/models/chess-piece-0.001-2conv-basic.model'):
+        print("Directory with .model file not found")
+        print(quit)
+        quit()
 
     CONFIGURATION = global_configuration.get()
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     CONFIGURATION["ROOT_LOG_DIR"] = '{}/{}/'.format(CONFIGURATION["RESULT_DIR"], timestamp)
 
+    model = tf.keras.models.load_model('tf/models/chess-piece-0.001-2conv-basic.model')
     os.mkdir(CONFIGURATION["ROOT_LOG_DIR"])
 
     for img_full_name in os.listdir(CONFIGURATION['SOURCE_DIR']):
@@ -203,7 +198,7 @@ if __name__ == '__main__':
         if CONFIGURATION["DEBUG_MODE"]:
             cv2.imshow("Successfully", gen_stack_images(
                 0.35, ([
-                    curr_loop_data['img'], result_position_png
+                    curr_loop_data['img'], playground, result_position_png
                 ])
             ))
             cv2.waitKey(0)
