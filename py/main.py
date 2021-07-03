@@ -2,15 +2,8 @@ import os
 import cv2
 import datetime
 
-CONFIGURATION = {
-    "SOURCE_DIR": 'assets/source/manual',
-    "RESULT_DIR": 'assets/result',
-    "PIECES_CATEGORIES": ["em", "bb", "bk", "bn", "bp", "bq", "br", "wb", "wk", "wn", "wp", "wq", "wr"],
-    "PROCESS_IMG_SIZE": 640,
-    "FIELD_IMG_SIZE": 50,
-    "MANUAL_CROPPED": False
-}
-
+import global_configuration
+import cv_chessboard_playground
 
 if __name__ == '__main__':
 
@@ -18,6 +11,8 @@ if __name__ == '__main__':
     #     print("Directory with .model file not found")
     #     print(quit)
     #     quit()
+
+    CONFIGURATION = global_configuration.get()
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     CONFIGURATION["ROOT_LOG_DIR"] = '{}/{}/'.format(CONFIGURATION["RESULT_DIR"], timestamp)
@@ -28,32 +23,35 @@ if __name__ == '__main__':
 
         # Setup current image necessary configuration
         try:
-            curr_process_config = {
+            curr_loop_data = {
                 'img': cv2.imread(os.path.join(CONFIGURATION["SOURCE_DIR"], img_full_name)),
                 'img_name': img_full_name.split('.')[0],
             }
+
+            curr_loop_data['img'] = cv2.resize(
+                curr_loop_data['img'],
+                (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"])
+            )
         except Exception as e:
             print(e)
             continue
 
-        curr_process_config["img_log_dir"] = \
-            '{}/{}/'.format(CONFIGURATION["ROOT_LOG_DIR"], curr_process_config["img_name"])
+        curr_loop_data["img_log_dir"] = \
+            '{}/{}/'.format(CONFIGURATION["ROOT_LOG_DIR"], curr_loop_data["img_name"])
 
-        os.mkdir(curr_process_config["img_log_dir"])
+        os.mkdir(curr_loop_data["img_log_dir"])
 
         if not CONFIGURATION['MANUAL_CROPPED']:
-            pass
-
-            # Detection chessboard from image
-
-            # Getting chessboard from image
-
-            # Remove additional frame from chessboard
-
+            try:
+                playground = cv_chessboard_playground.main(curr_loop_data)
+            except:
+                continue
         else:
-            pass
+            playground = curr_loop_data["img"]
 
         # Getting chessboard matrix from chessboard playground
+        cv2.imshow("PLAYGROUND", playground)
+        cv2.waitKey(0)
 
         # Getting chessboard FEN notation from matrix
 
