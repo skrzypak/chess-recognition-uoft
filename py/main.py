@@ -33,6 +33,9 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
         [0, 0, 0, 0, 0, 0, 0, 0]
     ]
 
+    # if len(playground_img_source) > 1:
+    #     playground_img_source = cv2.cvtColor(playground_img_source, cv2.COLOR_BGR2GRAY)
+
     w, h = playground_img_source.shape
     w = int(w / 8)
     h = int(h / 8)
@@ -47,9 +50,6 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
 
             img_field = playground_img_source[y:y+h, x:x+w]
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
-
-            if len(img_field) == 3:
-                img_field = cv2.cvtColor(img_field, cv2.COLOR_BGR2GRAY)
 
             field_data = np\
                 .array(img_field)\
@@ -173,7 +173,7 @@ if __name__ == '__main__':
         result_position_png = svg_2_png(path_svg, curr_loop_data["img_log_dir"])
 
         print('Generate result image')
-        result_output_path = os.path.join(curr_loop_data["img_log_dir"], "Successfully.png")
+        result_output_path = os.path.join(curr_loop_data["img_log_dir"], "successfully.png")
 
         if not CONFIGURATION['MANUAL_CROPPED']:
 
