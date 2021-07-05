@@ -64,8 +64,9 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
             result_matrix[i][j] = piece_category
 
             # Save analysed field to debugs
-            field_name = str(chessboard_cols_labels[j]) + str(chessboard_rows_labels[i]) + '_' + str(piece_category)
-            cv2.imwrite(os.path.join(curr_log_dir, field_name + '.png'), img_field)
+            if CONFIGURATION["DEBUG_MODE"]:
+                field_name = str(chessboard_cols_labels[j]) + str(chessboard_rows_labels[i]) + '_' + str(piece_category)
+                cv2.imwrite(os.path.join(curr_log_dir, field_name + '.png'), img_field)
 
     return result_matrix
 
