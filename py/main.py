@@ -21,6 +21,7 @@ chessboard_rows_labels = ["8", "7", "6", "5", "4", "3", "2", "1"]
 chessboard_cols_labels = ["A", "B", "C", "D", "E", "F", "G", "H"]
 
 
+# Input only RGB image source
 def recognition_chessboard_position(playground_img_source, curr_log_dir):
     result_matrix = [
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -33,8 +34,8 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
         [0, 0, 0, 0, 0, 0, 0, 0]
     ]
 
-    # if len(playground_img_source) > 1:
-    #     playground_img_source = cv2.cvtColor(playground_img_source, cv2.COLOR_BGR2GRAY)
+    playground_img_source = cv2.cvtColor(playground_img_source, cv2.COLOR_BGR2GRAY)
+    playground_img_source = cv2.blur(playground_img_source, (3, 3))
 
     w, h = playground_img_source.shape
     w = int(w / 8)
@@ -152,12 +153,10 @@ if __name__ == '__main__':
 
         if not CONFIGURATION['MANUAL_CROPPED']:
             try:
-                img_steps_results = cv_chessboard_playground.main(curr_loop_data)
-                playground = img_steps_results['playground']
+                playground = cv_chessboard_playground.main(curr_loop_data)
             except:
                 continue
         else:
-            img_steps_results = None
             playground = curr_loop_data["img"]
 
         print('Getting matrix from chessboard playground')
@@ -173,29 +172,11 @@ if __name__ == '__main__':
         result_position_png = svg_2_png(path_svg, curr_loop_data["img_log_dir"])
 
         print('Generate result image')
-        result_output_path = os.path.join(curr_loop_data["img_log_dir"], "successfully.png")
+        result_output_path = os.path.join(curr_loop_data["img_log_dir"], "done.png")
 
-        if not CONFIGURATION['MANUAL_CROPPED']:
-
-            result_all_images_process = cv2.imwrite(result_output_path, gen_stack_images(0.35, (
-                [
-                    curr_loop_data['img'], img_steps_results['gray'],
-                    img_steps_results['gauss'], img_steps_results['canny']
-                ],
-                [
-                    img_steps_results['dilation'], img_steps_results['erode'],
-                    img_steps_results['contours'], img_steps_results['chessboard']
-                ],
-                [
-                    img_steps_results['binary'], img_steps_results['contours_field_size'],
-                    img_steps_results['playground'], result_position_png
-                ],
-            )))
-
-        else:
-            result_all_images_process = cv2.imwrite(result_output_path, gen_stack_images(0.35, (
-                [playground, result_position_png],
-            )))
+        result_all_images_process = cv2.imwrite(result_output_path, gen_stack_images(0.35, (
+            [playground, result_position_png],
+        )))
 
         if CONFIGURATION["DEBUG_MODE"]:
             cv2.imshow("Successfully", gen_stack_images(

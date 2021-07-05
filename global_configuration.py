@@ -1,6 +1,6 @@
 def get():
     return {
-        "SOURCE_DIR": 'assets/source/manual',
+        "SOURCE_DIR": 'assets/source',
         "RESULT_DIR": 'assets/result',
         "PIECES_CATEGORIES": ["em", "bb", "bk", "bn", "bp", "bq", "br", "wb", "wk", "wn", "wp", "wq", "wr"],
         "ROOT_IMG_SIZE": 640,
