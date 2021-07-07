@@ -6,7 +6,8 @@ def get():
         "ROOT_IMG_SIZE": 640,
         "FIELD_IMG_SIZE": 50,
         "MANUAL_CROPPED": False,
-        "DEBUG_MODE": True
+        "DEBUG_MODE": True,
+        "DEBUG_FIELD": True
     }
 
 

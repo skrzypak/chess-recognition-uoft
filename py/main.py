@@ -34,10 +34,10 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
         [0, 0, 0, 0, 0, 0, 0, 0]
     ]
 
-    playground_img_source = cv2.cvtColor(playground_img_source, cv2.COLOR_BGR2GRAY)
-    playground_img_source = cv2.blur(playground_img_source, (3, 3))
+    playground_img_gray = cv2.cvtColor(playground_img_source, cv2.COLOR_BGR2GRAY)
+    playground_img_gray = cv2.blur(playground_img_gray, (3, 3))
 
-    w, h = playground_img_source.shape
+    w, h = playground_img_gray.shape
     w = int(w / 8)
     h = int(h / 8)
 
@@ -49,7 +49,7 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
         for j in range(8):
             x = j * w
 
-            img_field = playground_img_source[y:y+h, x:x+w]
+            img_field = playground_img_gray[y:y+h, x:x+w]
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
 
             field_data = np\
@@ -64,8 +64,10 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
             result_matrix[i][j] = piece_category
 
             # Save analysed field to debugs
-            if CONFIGURATION["DEBUG_MODE"]:
+            if CONFIGURATION["DEBUG_MODE"] or CONFIGURATION["DEBUG_FIELD"]:
                 field_name = str(chessboard_cols_labels[j]) + str(chessboard_rows_labels[i]) + '_' + str(piece_category)
+                cv2.imwrite(os.path.join(curr_log_dir, field_name + '_gray.png'), img_field)
+                img_field = playground_img_source[y:y + h, x:x + w]
                 cv2.imwrite(os.path.join(curr_log_dir, field_name + '.png'), img_field)
 
     return result_matrix
