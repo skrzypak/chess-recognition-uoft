@@ -19,15 +19,17 @@ def crop_chessboard_from_image(image, p1, p2, p3, p4):
     matrix = cv2.getPerspectiveTransform(pts1, pts2)
     perspective = cv2.warpPerspective(image, matrix, (output_img_size, output_img_size))
 
-    # cv2.imshow("crop_chessboard_from_image()", perspective)
-    # cv2.waitKey(0)
-
     return perspective
 
 
 def detect_chessboard_frame(image, img_source):
     img_contour = img_source.copy()
     contours, hierarchy = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    mx = 0
+    my = 0
+    mw = 0
+    mh = 0
 
     for cnt in contours:
         area = cv2.contourArea(cnt)
@@ -36,21 +38,22 @@ def detect_chessboard_frame(image, img_source):
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.05 * peri, True)
             x, y, w, h = cv2.boundingRect(approx)
-            cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.drawContours(img_contour, approx, -1, (0, 0, 255), 25)
+            if w > mw and h > mh:
+                mx = x
+                my = y
+                mw = w
+                mh = h
 
-    p1 = [x, y]
-    p2 = [x, y + h]
-    p3 = [x + w, y + h]
-    p4 = [x + w, y]
+    p1 = [mx, my]
+    p2 = [mx, my + mh]
+    p3 = [mx + mw, my + mh]
+    p4 = [mx + mw, my]
 
     return img_contour, p1, p2, p3, p4
 
 
 # Try detect chessboard field size
 def detect_field_size(image, img_source, min_num_of_field):
-    # cv2.imshow("detect_field_size(image)", image)
-
     num_of_found_fields = 0
     field_size = 0
     img_contour = img_source.copy()
@@ -84,9 +87,6 @@ def detect_field_size(image, img_source, min_num_of_field):
                     if num_of_found_fields >= min_num_of_field:
                         break
 
-    # cv2.imshow("detect_field_size(image_contour), field size {}".format(field_size), img_contour)
-    # cv2.waitKey(0)
-
     if num_of_found_fields < min_num_of_field:
         raise Exception("Not found min numbers of fields")
 
@@ -102,10 +102,6 @@ def crop_playground_from_chessboard_image(source, field_size):
     end = img_size - half_crop_size
     playground = source[half_crop_size:end, half_crop_size:end]
     playground = cv2.resize(playground, (img_size, img_size))
-
-    # cv2.imshow("crop_playground_from_chessboard_image()", playground)
-    # cv2.waitKey(0)
-
     return playground
 
 
