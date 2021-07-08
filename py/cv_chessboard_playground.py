@@ -118,10 +118,22 @@ def detect_field_size(image, img_source, min_num_of_field):
 
 def crop_playground_from_chessboard_image(source, field_size):
     img_size = source.shape[0]
-    half_crop_size = int((img_size - field_size * 8) / 2)
-    end = img_size - half_crop_size
-    playground = source[half_crop_size:end, half_crop_size:end]
-    playground = cv2.resize(playground, (img_size, img_size))
+
+    tmp = field_size * 1.08
+    if tmp * 8.0 < img_size:
+        field_size = tmp
+
+    start = int((img_size - field_size * 8) / 2)
+    end = img_size - start
+    # playground = source[start:end, start:end]
+    # playground = cv2.resize(playground, (img_size, img_size))
+
+    pts1 = np.float32([[start, start], [start, end], [end, end], [end, start]])
+    pts2 = np.float32(
+        [[0, 0], [0, img_size], [img_size, img_size], [img_size, 0]]
+    )
+    matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    playground = cv2.warpPerspective(source, matrix, (img_size, img_size))
     return playground
 
 
