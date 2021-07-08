@@ -119,5 +119,5 @@ if __name__ == '__main__':
     model.save(os.path.join('../models', CONFIGURATION['MODEL_NAME']))
 
     print("\nEvaluate on train data")
-    result = model.evaluate(X, Y, batch_size=32, steps=5)
+    result = model.evaluate(test_x, test_y, batch_size=32, steps=5)
     print("test loss, test acc:", result)
