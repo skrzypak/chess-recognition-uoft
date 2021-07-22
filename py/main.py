@@ -35,7 +35,6 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
     ]
 
     playground_img_gray = cv2.cvtColor(playground_img_source, cv2.COLOR_BGR2GRAY)
-    playground_img_gray = cv2.blur(playground_img_gray, (3, 3))
 
     w, h = playground_img_gray.shape
     w = int(w / 8)
@@ -50,7 +49,9 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
             x = j * w
 
             img_field = playground_img_gray[y:y+h, x:x+w]
+            img_field = cv2.medianBlur(img_field, 3)
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
+            ret, img_field = cv2.threshold(img_field, 127, 255, cv2.THRESH_TRUNC)
 
             field_data = np\
                 .array(img_field)\
@@ -66,8 +67,6 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
             # Save analysed field to debugs
             if CONFIGURATION["DEBUG_MODE"] or CONFIGURATION["DEBUG_FIELD"]:
                 field_name = str(chessboard_cols_labels[j]) + str(chessboard_rows_labels[i]) + '_' + str(piece_category)
-                cv2.imwrite(os.path.join(curr_log_dir, field_name + '_gray.png'), img_field)
-                img_field = playground_img_source[y:y + h, x:x + w]
                 cv2.imwrite(os.path.join(curr_log_dir, field_name + '.png'), img_field)
 
     return result_matrix

@@ -16,6 +16,7 @@ assets/result/
 assets/source/
 tf/logs/
 tf/models/
+tf/gen/
 
 # Distribution / packaging
 .Python
@@ -139,4 +140,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 assets/npy/testing_data.npy
-assets/npy/train_data.npy
+assets/npy/training_data.npy

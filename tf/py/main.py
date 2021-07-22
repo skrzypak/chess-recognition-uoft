@@ -3,46 +3,70 @@ import cv2
 import numpy as np
 from random import shuffle
 
-from tqdm import tqdm
 import tensorflow as tf
 import datetime
 
+from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Flatten, Dense, Dropout
+from keras.losses import SparseCategoricalCrossentropy
+
 import global_configuration
 
-
-def create_train_data():
-    init_training_data = []
-
-    for curr in os.listdir(CONFIGURATION['TRAIN_DIR']):
-        curr_train_dir = os.path.join(CONFIGURATION['TRAIN_DIR'], curr)
-        label_category = CONFIGURATION['PIECES_CATEGORIES'].index(curr)
-        for img_train in tqdm(os.listdir(curr_train_dir)):
-            path = os.path.join(curr_train_dir, img_train)
-            img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            img_ready = cv2.resize(img, (CONFIGURATION['FIELD_IMG_SIZE'], CONFIGURATION['FIELD_IMG_SIZE']))
-            init_training_data.append([np.array(img_ready), label_category])
-
-    shuffle(init_training_data)
-    np.save('../../assets/npy/train_data.npy', init_training_data)
-    return init_training_data
+from keras.preprocessing.image import img_to_array
+from keras.preprocessing.image import ImageDataGenerator
 
 
-def create_testing_data():
-    init_testing_data = []
-    inx = 0
+def create_data():
+    # 0 is training, 1 is for validation
+    out_data = [[], []]
+    dir_paths = [
+        CONFIGURATION['TRAIN_DIR'],
+        CONFIGURATION['TEST_DIR']
+    ]
+    prints = [
+        'Training data ->',
+        'Validating data ->'
+    ]
 
-    for curr in os.listdir(CONFIGURATION['TEST_DIR']):
-        curr_testing_dir = os.path.join(CONFIGURATION['TEST_DIR'], curr)
-        for img_test in tqdm(os.listdir(curr_testing_dir)):
-            path = os.path.join(curr_testing_dir, img_test)
-            img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            img_ready = cv2.resize(img, (CONFIGURATION['FIELD_IMG_SIZE'], CONFIGURATION['FIELD_IMG_SIZE']))
-            init_testing_data.append([np.array(img_ready), inx])
-            inx += 1
+    for inx_path, p in enumerate(dir_paths):
+        print("Generating dataset...")
+        for curr in os.listdir(p):
+            count = 0
+            curr_dir = os.path.join(p, curr)
+            label_category = CONFIGURATION['PIECES_CATEGORIES'].index(curr)
+            for img_name in os.listdir(curr_dir):
+                path = os.path.join(curr_dir, img_name)
 
-    shuffle(init_testing_data)
-    np.save('../../assets/npy/testing_data.npy', init_testing_data)
-    return init_testing_data
+                img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+                img = cv2.medianBlur(img, 3)
+                img = cv2.resize(img, (CONFIGURATION['FIELD_IMG_SIZE'], CONFIGURATION['FIELD_IMG_SIZE']))
+                ret, img = cv2.threshold(img, 127, 255, cv2.THRESH_TRUNC)
+
+                data = img_to_array(img)
+                samples = np.expand_dims(data, 0)
+                datagen = ImageDataGenerator(
+                    width_shift_range=0.2,
+                    height_shift_range=0.2,
+                    horizontal_flip=True,
+                    vertical_flip=True,
+                    rotation_range=35,
+                    )
+
+                it = datagen.flow(samples, batch_size=32)
+                for i in range(30):
+                    batch = it.next()
+                    image = batch[0].astype('uint8')
+                    out_data[inx_path].append([np.array(image), label_category])
+                    count += 1
+
+            print(prints[inx_path] + ' folder: {} count: {}'.format(curr, count))
+
+    print("")
+    shuffle(out_data[0])
+    np.save('../../assets/npy/training_data.npy', out_data[0])
+    shuffle(out_data[1])
+    np.save('../../assets/npy/testing_data.npy', out_data[1])
+    return out_data[0], out_data[1]
 
 
 def get_features_labels(data_array):
@@ -57,23 +81,31 @@ def get_features_labels(data_array):
     y = np.array(y).reshape(-1, 1)
 
     x = x / 255.0
-
     return x, y
 
 
 def create_model(shapes):
     return tf.keras.Sequential([
-        tf.keras.layers.Conv2D(32, (3, 3), activation='sigmoid', input_shape=shapes.shape[1:]),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        tf.keras.layers.Conv2D(64, (3, 3), activation=tf.keras.layers.LeakyReLU()),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        tf.keras.layers.Conv2D(128, (3, 3), activation=tf.keras.layers.LeakyReLU()),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        tf.keras.layers.Conv2D(32, (3, 3), activation=tf.keras.layers.LeakyReLU()),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(64, activation=tf.keras.layers.ReLU()),
-        tf.keras.layers.Dense(13, activation='sigmoid')
+        Conv2D(filters=32, kernel_size=4, activation='relu', padding='same', input_shape=shapes.shape[1:]),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+        Conv2D(filters=64, kernel_size=4, activation=tf.keras.layers.LeakyReLU(), padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+        Conv2D(filters=128, kernel_size=4, activation=tf.keras.layers.LeakyReLU(), padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+        Conv2D(filters=32, kernel_size=4, activation=tf.keras.layers.LeakyReLU(), padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+        Flatten(),
+        Dense(128, activation='relu', kernel_regularizer='l2'),
+        Dropout(0.5),
+        Dense(64, activation='relu', kernel_regularizer='l2'),
+        Dropout(0.3),
+        Dense(32, activation='relu', kernel_regularizer='l2'),
+        Dropout(0.3),
+        Dense(13, activation='softmax')
     ])
 
 
@@ -81,43 +113,40 @@ if __name__ == '__main__':
 
     CONFIGURATION = global_configuration.get_tf()
 
-    # Creating / loading train data
-    if os.path.isfile('../../assets/npy/train_data.npy'):
-        training_data = np.load('../../assets/npy/train_data.npy', allow_pickle=True)
-    else:
-        training_data = create_train_data()
-
-    print('Training data loaded successfully')
-
-    if os.path.isfile('../../assets/npy/testing_data.npy'):
+    # Load Libraries and Data
+    if os.path.isfile(
+            '../../assets/npy/training_data.npy') and os.path.isfile('../../assets/npy/testing_data.npy'):
+        training_data = np.load('../../assets/npy/training_data.npy', allow_pickle=True)
         testing_data = np.load('../../assets/npy/testing_data.npy', allow_pickle=True)
     else:
-        testing_data = create_testing_data()
+        training_data, testing_data = create_data()
 
-    print('Testing data loaded successfully')
-
-    # Data accuracy
+    print('Training and testing data loaded successfully')
 
     X, Y = get_features_labels(training_data)
     test_x, test_y = get_features_labels(testing_data)
 
-    # CNN
+    print('Configure model')
+
+    #  Build model
     model = create_model(X)
-    model.summary()
-    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+    # model.summary()
+    model.compile(loss=SparseCategoricalCrossentropy(),
                   optimizer='adam',
                   metrics=['accuracy'])
 
-    # Init logs
+    # Init model logs
     log_dir = "../logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+    # es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=25)
+    # mc = ModelCheckpoint('best_model.h5', monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
     # Resolve model
-    model.fit(X, Y, batch_size=32, epochs=11, validation_split=CONFIGURATION['LR'],
-              validation_data=(test_x, test_y), callbacks=[tensorboard_callback])
+    model.fit(X, Y, epochs=160, validation_split=0.25, callbacks=[tensorboard_callback], verbose=1)
 
     model.save(os.path.join('../models', CONFIGURATION['MODEL_NAME']))
 
-    print("\nEvaluate on train data")
-    result = model.evaluate(test_x, test_y, batch_size=32, steps=5)
+    print("\nEvaluate on testing data")
+    result = model.evaluate(test_x, test_y, verbose=1)
     print("test loss, test acc:", result)
