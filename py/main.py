@@ -49,7 +49,7 @@ def recognition_chessboard_position(playground_img_source, curr_log_dir):
             x = j * w
 
             img_field = playground_img_gray[y:y+h, x:x+w]
-            img_field = cv2.medianBlur(img_field, 3)
+            img_field = cv2.medianBlur(img_field, 5)
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
             ret, img_field = cv2.threshold(img_field, 127, 255, cv2.THRESH_TRUNC)
 

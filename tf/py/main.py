@@ -3,9 +3,9 @@ import cv2
 import numpy as np
 from random import shuffle
 
-import tensorflow as tf
 import datetime
 
+import tensorflow as tf
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Flatten, Dense, Dropout
 from keras.losses import SparseCategoricalCrossentropy
@@ -38,13 +38,13 @@ def create_data():
                 path = os.path.join(curr_dir, img_name)
 
                 img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-                img = cv2.medianBlur(img, 3)
+                img = cv2.medianBlur(img, 5)
                 img = cv2.resize(img, (CONFIGURATION['FIELD_IMG_SIZE'], CONFIGURATION['FIELD_IMG_SIZE']))
                 ret, img = cv2.threshold(img, 127, 255, cv2.THRESH_TRUNC)
 
                 data = img_to_array(img)
                 samples = np.expand_dims(data, 0)
-                datagen = ImageDataGenerator(
+                data_gen = ImageDataGenerator(
                     width_shift_range=0.2,
                     height_shift_range=0.2,
                     horizontal_flip=True,
@@ -52,8 +52,8 @@ def create_data():
                     rotation_range=35,
                     )
 
-                it = datagen.flow(samples, batch_size=32)
-                for i in range(30):
+                it = data_gen.flow(samples, batch_size=32)
+                for i in range(25):
                     batch = it.next()
                     image = batch[0].astype('uint8')
                     out_data[inx_path].append([np.array(image), label_category])
@@ -86,25 +86,22 @@ def get_features_labels(data_array):
 
 def create_model(shapes):
     return tf.keras.Sequential([
-        Conv2D(filters=32, kernel_size=4, activation='relu', padding='same', input_shape=shapes.shape[1:]),
+        Conv2D(filters=13, kernel_size=5, activation='relu', padding='same', input_shape=shapes.shape[1:]),
+        Dropout(0.1),
         BatchNormalization(),
         MaxPooling2D(pool_size=(2, 2)),
-        Conv2D(filters=64, kernel_size=4, activation=tf.keras.layers.LeakyReLU(), padding='same'),
+        Conv2D(filters=64, kernel_size=5, activation='relu', padding='same'),
+        Dropout(0.1),
         BatchNormalization(),
         MaxPooling2D(pool_size=(2, 2)),
-        Conv2D(filters=128, kernel_size=4, activation=tf.keras.layers.LeakyReLU(), padding='same'),
+        Conv2D(filters=128, kernel_size=5, activation='relu', padding='same'),
+        Dropout(0.1),
         BatchNormalization(),
         MaxPooling2D(pool_size=(2, 2)),
-        Conv2D(filters=32, kernel_size=4, activation=tf.keras.layers.LeakyReLU(), padding='same'),
+        Conv2D(filters=48, kernel_size=5, activation='relu', padding='same'),
         BatchNormalization(),
         MaxPooling2D(pool_size=(2, 2)),
         Flatten(),
-        Dense(128, activation='relu', kernel_regularizer='l2'),
-        Dropout(0.5),
-        Dense(64, activation='relu', kernel_regularizer='l2'),
-        Dropout(0.3),
-        Dense(32, activation='relu', kernel_regularizer='l2'),
-        Dropout(0.3),
         Dense(13, activation='softmax')
     ])
 
@@ -143,7 +140,7 @@ if __name__ == '__main__':
     # mc = ModelCheckpoint('best_model.h5', monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
     # Resolve model
-    model.fit(X, Y, epochs=160, validation_split=0.25, callbacks=[tensorboard_callback], verbose=1)
+    model.fit(X, Y, epochs=1, validation_split=0.25, callbacks=[tensorboard_callback], verbose=1, use_multiprocessing=True)
 
     model.save(os.path.join('../models', CONFIGURATION['MODEL_NAME']))
 
