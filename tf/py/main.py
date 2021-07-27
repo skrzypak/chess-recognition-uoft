@@ -90,18 +90,26 @@ def create_model(shapes):
         Dropout(0.1),
         BatchNormalization(),
         MaxPooling2D(pool_size=(2, 2)),
-        Conv2D(filters=64, kernel_size=5, activation='relu', padding='same'),
-        Dropout(0.1),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
-        Conv2D(filters=128, kernel_size=5, activation='relu', padding='same'),
-        Dropout(0.1),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
-        Conv2D(filters=48, kernel_size=5, activation='relu', padding='same'),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
+        # Conv2D(filters=64, kernel_size=5, activation='relu', padding='same'),
+        # Dropout(0.1),
+        # BatchNormalization(),
+        # MaxPooling2D(pool_size=(2, 2)),
+        # Conv2D(filters=128, kernel_size=5, activation='relu', padding='same'),
+        # Dropout(0.1),
+        # BatchNormalization(),
+        # MaxPooling2D(pool_size=(2, 2)),
+        # Conv2D(filters=48, kernel_size=5, activation='relu', padding='same'),
+        # BatchNormalization(),
+        # MaxPooling2D(pool_size=(2, 2)),
         Flatten(),
+        Dense(512, activation='relu'),
+        Dense(512, activation='relu'),
+        Dense(512, activation='relu'),
+        Dense(512, activation='relu'),
+        Dense(512, activation='relu'),
+        Dropout(0.5),
+        Dense(64, activation='relu'),
+        Dense(16, activation='relu'),
         Dense(13, activation='softmax')
     ])
 
@@ -140,7 +148,7 @@ if __name__ == '__main__':
     # mc = ModelCheckpoint('best_model.h5', monitor='val_accuracy', mode='max', verbose=1, save_best_only=True)
 
     # Resolve model
-    model.fit(X, Y, epochs=1, validation_split=0.25, callbacks=[tensorboard_callback], verbose=1, use_multiprocessing=True)
+    model.fit(X, Y, epochs=11, validation_split=0.25, callbacks=[tensorboard_callback], verbose=1, use_multiprocessing=True)
 
     model.save(os.path.join('../models', CONFIGURATION['MODEL_NAME']))
 

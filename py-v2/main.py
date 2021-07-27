@@ -47,13 +47,13 @@ def recognition_chessboard_position(playground):
         for j in range(8):
             x = j * w
 
-            img_field = playground[y:y+h, x:x+w]
+            img_field = playground[y:y + h, x:x + w]
             img_field = cv2.medianBlur(img_field, 5)
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
             ret, img_field = cv2.threshold(img_field, 127, 255, cv2.THRESH_TRUNC)
 
-            field_data = np\
-                .array(img_field)\
+            field_data = np \
+                .array(img_field) \
                 .reshape(-1, CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"], 1)
             field_data = field_data / 255.0
 
@@ -138,6 +138,10 @@ if __name__ == '__main__':
         exit()
 
     blank_img = np.zeros((CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"], 1), np.uint8)
+    result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
+
+    ret, frame = cap.read()
+    time.sleep(0.5)
 
     while True:
         ret, frame = cap.read()
@@ -148,6 +152,11 @@ if __name__ == '__main__':
 
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img, (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
+
+        cv2.imshow("AI CHESS DETECTION", gen_stack_images(1, ([
+            cv2.resize(frame, (365, 365)),
+            cv2.resize(result, (365, 365)),
+        ])))
 
         try:
             images = cv_chessboard_playground.main({"gray": img})
@@ -165,30 +174,33 @@ if __name__ == '__main__':
             print('Convert SVG to PNG')
             result = svg_2_png(path_svg)
 
-            cv2.imshow("AI CHESS DETECTION", gen_stack_images(0.75, (
-                [
-                    cv2.resize(frame, (365, 365)),
-                    cv2.resize(result, (365, 365)),
-                ],
-                [
-                    cv2.resize(images['chessboard_log'], (365, 365)),
-                    cv2.resize(images['playground_log'], (365, 365)),
-                ]
-            )))
+            # cv2.imshow("AI CHESS DETECTION", gen_stack_images(0.75, (
+            #     [
+            #         cv2.resize(frame, (365, 365)),
+            #         cv2.resize(result, (365, 365)),
+            #     ],
+            #     [
+            #         cv2.resize(images['chessboard_log'], (365, 365)),
+            #         cv2.resize(images['playground_log'], (365, 365)),
+            #     ]
+            # )))
 
+            img = frame
         except Exception as e:
             print(e)
             img = cv2.imread('./tmp/err.tmp.png')
-            cv2.imshow("AI CHESS DETECTION", gen_stack_images(1, ([
-                cv2.resize(frame, (365, 365)),
-                cv2.resize(img, (365, 365)),
-            ])))
 
-        time.sleep(1)
+        cv2.imshow("AI CHESS DETECTION", gen_stack_images(1, ([
+            cv2.resize(img, (365, 365)),
+            cv2.resize(result, (365, 365)),
+        ])))
+
+        while cv2.waitKey(1) != ord('e'):
+            pass
+
         if cv2.waitKey(1) == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
     shutil.rmtree('./tmp/')
-
