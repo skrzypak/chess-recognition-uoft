@@ -1,15 +1,10 @@
-import os
 import sys
 
 import cv2
 import numpy as np
 
-import global_configuration
-from py.function import gen_stack_images
-
 
 def crop_chessboard_from_image(image, corners):
-
     output_img_size = image.shape[0]
 
     pts1 = np.float32(corners)
@@ -22,8 +17,7 @@ def crop_chessboard_from_image(image, corners):
     return perspective
 
 
-def detect_chessboard_frame(image, img_source):
-    img_contour = img_source.copy()
+def detect_chessboard_frame(image, img_log_list):
     contours, hierarchy = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     mx = 0
@@ -35,7 +29,7 @@ def detect_chessboard_frame(image, img_source):
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area > 500:
-            cv2.drawContours(img_contour, cnt, -1, (255, 0, 0), 5)
+            cv2.drawContours(img_log_list[0], cnt, -1, (255, 0, 0), 5)
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             if len(approx) >= 4:
@@ -48,8 +42,8 @@ def detect_chessboard_frame(image, img_source):
                     out_approx = approx
 
     x, y, w, h = cv2.boundingRect(out_approx)
-    cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    cv2.drawContours(img_contour, out_approx, -1, (0, 0, 255), 25)
+    cv2.rectangle(img_log_list[0], (x, y), (x + w, y + h), (0, 255, 0), 2)
+    cv2.drawContours(img_log_list[0], out_approx, -1, (0, 0, 255), 25)
 
     if len(out_approx) == 4:
         # TODO sorting clockwise
@@ -59,8 +53,8 @@ def detect_chessboard_frame(image, img_source):
             out_approx[2][0],
             out_approx[1][0]
         ]
-        # print(from_approx)
-        return img_contour, from_approx
+
+        return from_approx
     else:
         # Frame version
         p1 = [mx, my]
@@ -68,21 +62,20 @@ def detect_chessboard_frame(image, img_source):
         p3 = [mx + mw, my + mh]
         p4 = [mx + mw, my]
         bounders = [p1, p2, p3, p4]
-        # print(bounders)
-        return img_contour, bounders
+
+        return bounders
 
 
 # Try detect chessboard field size
-def detect_field_size(image, img_source, min_num_of_field):
+def detect_field_size(image, img_log_list, min_num_of_field):
     num_of_found_fields = 0
     field_size = 0
-    img_contour = img_source.copy()
     contours, hierarchy = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area:
-            cv2.drawContours(img_contour, cnt, -1, (255, 0, 0), 25)
+            cv2.drawContours(img_log_list[1], cnt, -1, (255, 0, 0), 25)
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             num_cor = len(approx)
@@ -99,11 +92,10 @@ def detect_field_size(image, img_source, min_num_of_field):
                     field_size = max(field_size, n)
 
                     x, y, w, h = cv2.boundingRect(approx)
-                    cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    cv2.drawContours(img_contour, approx, -1, (0, 0, 255), 10)
+                    cv2.rectangle(img_log_list[1], (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.drawContours(img_log_list[1], approx, -1, (0, 0, 255), 10)
 
                     num_of_found_fields += 1
-
                     if num_of_found_fields >= min_num_of_field:
                         break
 
@@ -113,7 +105,7 @@ def detect_field_size(image, img_source, min_num_of_field):
     if field_size < 25:
         raise Exception('Can not detect field size')
 
-    return img_contour, field_size
+    return field_size
 
 
 def crop_playground_from_chessboard_image(source, field_size):
@@ -125,8 +117,6 @@ def crop_playground_from_chessboard_image(source, field_size):
 
     start = int((img_size - field_size * 8) / 2)
     end = img_size - start
-    # playground = source[start:end, start:end]
-    # playground = cv2.resize(playground, (img_size, img_size))
 
     pts1 = np.float32([[start, start], [start, end], [end, end], [end, start]])
     pts2 = np.float32(
@@ -137,144 +127,55 @@ def crop_playground_from_chessboard_image(source, field_size):
     return playground
 
 
-def throw_exception(err):
-    print(err['title'])
-    cv2.imwrite(os.path.join(err["img_log_dir"], err['output']), err['img'])
-
-    if err["DEBUG_MODE"]:
-        cv2.imshow(err['title'], err['img'])
-        cv2.waitKey(0)
-    raise Exception(err['title'])
-
-
-def log_detection_playground(info):
-    cv2.imwrite(os.path.join(info["img_log_dir"], info['output']), info['img'])
-
-    if info["DEBUG_MODE"]:
-        cv2.imshow(info['title'], info['img'])
-        cv2.waitKey(0)
-
-
 def main(args):
-    CONFIGURATION = global_configuration.get()
+    print('\ncv_chessboard_playground.main')
+    img = cv2.cvtColor(args["img"], cv2.COLOR_BGR2GRAY)
 
-    print('\nInitialize variable: {}'.format(args['img_name']))
-
-    sts_results = {
-        'source': args["img"],
-        'blank': np.zeros((CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"], 3), np.uint8),
-        'gray': cv2.cvtColor(args["img"], cv2.COLOR_BGR2GRAY),
-        'result': None
-    }
-
-    print('Generating chessboard image mask')
-    sts_results['smoothing'] = cv2.blur(sts_results['gray'], (2, 2))
-    sts_results['thresh'], sts_results['binary'] = cv2.threshold(sts_results['smoothing'], 100, 255, cv2.THRESH_BINARY)
-    sts_results['binary'] = ~sts_results['binary']
-    # sts_results['canny'] = cv2.Canny(sts_results['binary'], 200, 200)
-    # sts_results['dilate'] = cv2.dilate(sts_results['canny'], (300, 300), iterations=6)
-    # sts_results['erode'] = cv2.erode(sts_results['dilate'], (200, 200), iterations=2)
-
-    print('Generated chessboard image mask')
+    img_log_list = []
 
     print('Crop chessboard from image')
+    g_log_img = args["img"]
     try:
-        sts_results['frame_contours'], corners = \
-            detect_chessboard_frame(sts_results['binary'], sts_results['source'])
-        sts_results['chessboard'] = crop_chessboard_from_image(sts_results['source'], corners)
-        sts_results['chessboard_gray'] = cv2.cvtColor(sts_results["chessboard"], cv2.COLOR_BGR2GRAY)
-        sts_results['chessboard_smoothing'] = cv2.blur(sts_results['chessboard_gray'], (3, 3))
-        sts_results['chessboard_canny'] = cv2.Canny(sts_results['chessboard_smoothing'], 200, 200)
-        sts_results['chessboard_dilate'] = cv2.dilate(sts_results['chessboard_canny'], (200, 200), iterations=5)
-    except Exception as e:
-        print(e)
-        throw_exception({
-            'img': gen_stack_images(0.35, (
-                [
-                    sts_results['source'],
-                    sts_results['gray'],
-                    sts_results['smoothing'],
-                    sts_results['binary'],
-                    # sts_results['canny'],
-                    # sts_results['dilate'],
-                    # sts_results['erode']
-                ],
-            )),
-            'output': 'fail_detection_chessboard.png',
-            'title': "Can't detect possibility chessboard",
-            "img_log_dir": args["img_log_dir"],
-            "DEBUG_MODE": CONFIGURATION["DEBUG_MODE"]
-        })
+        img = cv2.blur(img, (2, 2))
+        thresh, img = cv2.threshold(img, 100, 255, cv2.THRESH_BINARY)
+        img = ~img
+        # img = cv2.Canny(img, 200, 200)
+        # img = cv2.dilate(img, (300, 300), iterations=6)
+        # img = cv2.erode(img, (200, 200), iterations=2)
+        img_log_list.append(args["img"].copy())
+        corners = detect_chessboard_frame(img, img_log_list)
+        chessboard_img = crop_chessboard_from_image(args["img"].copy(), corners)
+        img = cv2.cvtColor(chessboard_img, cv2.COLOR_BGR2GRAY)
+
+    except Exception:
+        cv2.imwrite('./tmp/err.tmp.png', g_log_img)
+        raise Exception("(1): CHESSBOARD EXCEPTION")
+
     print('Cropped chessboard from image')
 
     print('Getting field size')
+    g_log_img = chessboard_img.copy()
     try:
-        sts_results['field_size_contours'], field_size = detect_field_size(
-            sts_results['chessboard_dilate'], sts_results['chessboard'], 3
-        )
+        img = cv2.blur(img, (3, 3))
+        img = cv2.Canny(img, 200, 200)
+        img = cv2.dilate(img, (200, 200), iterations=5)
+
+        img_log_list.append(chessboard_img.copy())
+        field_size = detect_field_size(img, img_log_list, 3)
+
         print('Correct getting field size')
 
-        sts_results['result'] = crop_playground_from_chessboard_image(sts_results['chessboard'], field_size)
+        img = crop_playground_from_chessboard_image(chessboard_img, field_size)
 
     except Exception as e:
-        print(e)
-        throw_exception({
-            'img': gen_stack_images(0.35, (
-                [
-                    sts_results['source'],
-                    sts_results['gray'],
-                    sts_results['smoothing'],
-                    sts_results['binary'],
-                    # sts_results['canny'],
-                    # sts_results['dilate'],
-                    # sts_results['erode'],
-                    sts_results['frame_contours'],
-                ],
-                [
-                    sts_results['chessboard'],
-                    sts_results['chessboard_gray'],
-                    sts_results['chessboard_smoothing'],
-                    sts_results['chessboard_canny'],
-                    sts_results['chessboard_dilate'],
-                ],
-            )),
-            'output': 'fail_playground.png',
-            'title': "Can't get playgrounds",
-            "img_log_dir": args["img_log_dir"],
-            "DEBUG_MODE": CONFIGURATION["DEBUG_MODE"]
-        })
+        cv2.imwrite('./tmp/err.tmp.png', g_log_img)
+        raise Exception("(2): PLAYGROUND EXCEPTION")
 
-    log_detection_playground({
-        'img': gen_stack_images(0.35, (
-            [
-                sts_results['source'],
-                sts_results['gray'],
-                sts_results['smoothing'],
-                sts_results['binary'],
-                # sts_results['canny'],
-                # sts_results['dilate'],
-                # sts_results['erode'],
-            ],
-            [
-                sts_results['frame_contours'],
-                sts_results['chessboard'],
-                sts_results['chessboard_gray'],
-                sts_results['chessboard_smoothing'],
-            ],
-            [
-                sts_results['chessboard_canny'],
-                sts_results['chessboard_dilate'],
-                sts_results['field_size_contours'],
-                sts_results['result'],
-            ]
-        )),
-        'output': 'ok_playground.png',
-        'title': "Playground",
-        "img_log_dir": args["img_log_dir"],
-        "DEBUG_MODE": CONFIGURATION["DEBUG_MODE"]
-    })
-
-    return sts_results['result']
+    return {
+        'playground': img,
+        'chessboard_log': img_log_list[0],
+        'playground_log': img_log_list[1]
+    }
 
 
 if __name__ == '__main__':

@@ -7,7 +7,8 @@ def get():
         "FIELD_IMG_SIZE": 120,
         "MANUAL_CROPPED": False,
         "DEBUG_MODE": False,
-        "DEBUG_FIELD": True
+        "DEBUG_FIELD": True,
+        "CHANNELS": 3
     }
 
 

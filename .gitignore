@@ -14,9 +14,8 @@ assets/chess_dataset/
 assets/npy/
 assets/result/
 assets/source/
-tf/logs/
-tf/models/
-tf/gen/
+py/tmp
+assets/model
 
 # Distribution / packaging
 .Python
