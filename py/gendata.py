@@ -26,6 +26,7 @@ def main(args):
         for img_name in os.listdir(curr_dir):
             img_path = os.path.join(curr_dir, img_name)
             img = cv2.imread(img_path)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = cv2.resize(img, (CONFIGURATION['FIELD_IMG_SIZE'], CONFIGURATION['FIELD_IMG_SIZE']))
             data = img_to_array(img)
             samples = np.expand_dims(data, 0)
@@ -34,10 +35,10 @@ def main(args):
                 width_shift_range=0.15,
                 height_shift_range=0.15,
                 horizontal_flip=True,
-                rotation_range=90,
+                rotation_range=25,
             )
             it = data_gen.flow(samples, batch_size=32, save_to_dir=curr_dir_out)
-            for i in range(100):
+            for i in range(50):
                 it.next()
 
         print(curr_dir_out, 'DONE')
