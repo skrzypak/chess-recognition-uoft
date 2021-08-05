@@ -47,7 +47,7 @@ def recognition_chessboard_position(playground):
             x = j * w
 
             img_field = playground[y:y + h, x:x + w]
-            # img_field = cv2.medianBlur(img_field, 5)
+            img_field = cv2.blur(img_field, (5, 5))
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
 
             field_data = np \
@@ -57,7 +57,7 @@ def recognition_chessboard_position(playground):
 
             # AI RECOGNITION
             model_out = model.predict(field_data)[0]
-            arg = np.argmax(model_out)
+            arg = np.argmax(model_out, axis= -1)
             piece_category = CONFIGURATION["PIECES_CATEGORIES"][arg]
             # piece_category = CONFIGURATION["PIECES_CATEGORIES"][0]
             result_matrix[i][j] = piece_category.lower()
@@ -149,7 +149,9 @@ if __name__ == '__main__':
             print("Can't receive frame (stream end?). Exiting ...")
             break
 
-        img = frame
+        # img = frame
+        img = cv2.imread('../assets/IMG.jpg')
+        im_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
 
         try:
@@ -157,7 +159,7 @@ if __name__ == '__main__':
             img = images['playground']
 
             print('Getting matrix from chessboard playground')
-            matrix = recognition_chessboard_position(img)
+            matrix = recognition_chessboard_position(img.copy())
 
             print('Getting FEN notation from matrix')
             FEN = get_fen_notation(matrix)
@@ -168,7 +170,7 @@ if __name__ == '__main__':
             print('Convert SVG to PNG')
             result = svg_2_png(path_svg)
 
-            img = frame
+            # img = frame
         except Exception as e:
             print(e)
             img = cv2.imread('./tmp/err.tmp.png')

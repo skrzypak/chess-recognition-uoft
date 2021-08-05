@@ -75,7 +75,7 @@ def detect_field_size(image, img_log_list, min_num_of_field):
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area:
-            cv2.drawContours(img_log_list[1], cnt, -1, (255, 0, 0), 25)
+            cv2.drawContours(img_log_list[1], cnt, -1, (255, 0, 0), 2)
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             num_cor = len(approx)
@@ -87,13 +87,13 @@ def detect_field_size(image, img_log_list, min_num_of_field):
                 field_height = abs(approx[1] - approx[3])[0][1]
                 subs = abs(field_width - field_height)
 
-                if (55 < field_width <= 80 and 55 < field_height <= 80) and subs < 10:
+                if (90 < field_width <= 120 and 90 < field_height <= 120) and subs < 10:
                     n = min(field_width, field_height)
                     field_size = max(field_size, n)
 
                     x, y, w, h = cv2.boundingRect(approx)
                     cv2.rectangle(img_log_list[1], (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    cv2.drawContours(img_log_list[1], approx, -1, (0, 0, 255), 10)
+                    cv2.drawContours(img_log_list[1], approx, -1, (0, 0, 255), 15)
 
                     num_of_found_fields += 1
                     if num_of_found_fields >= min_num_of_field:
@@ -102,7 +102,7 @@ def detect_field_size(image, img_log_list, min_num_of_field):
     if num_of_found_fields < min_num_of_field:
         raise Exception("Not found min numbers of fields")
 
-    if field_size < 25:
+    if field_size < 80:
         raise Exception('Can not detect field size')
 
     return field_size
@@ -134,41 +134,37 @@ def main(args):
     img_log_list = []
 
     print('Crop chessboard from image')
-    g_log_img = args["img"]
     try:
+        img_log_list.append(args["img"].copy())
         img = cv2.blur(img, (2, 2))
         thresh, img = cv2.threshold(img, 100, 255, cv2.THRESH_BINARY)
         img = ~img
         # img = cv2.Canny(img, 200, 200)
         # img = cv2.dilate(img, (300, 300), iterations=6)
         # img = cv2.erode(img, (200, 200), iterations=2)
-        img_log_list.append(args["img"].copy())
         corners = detect_chessboard_frame(img, img_log_list)
         chessboard_img = crop_chessboard_from_image(args["img"].copy(), corners)
-        img = cv2.cvtColor(chessboard_img, cv2.COLOR_BGR2GRAY)
-
     except Exception:
-        cv2.imwrite('./tmp/err.tmp.png', g_log_img)
+        cv2.imwrite('./tmp/err.tmp.png', img_log_list[0])
         raise Exception("(1): CHESSBOARD EXCEPTION")
 
     print('Cropped chessboard from image')
 
     print('Getting field size')
-    g_log_img = chessboard_img.copy()
     try:
+        img_log_list.append(img_log_list[0].copy())
+        img = cv2.cvtColor(chessboard_img, cv2.COLOR_BGR2GRAY)
         img = cv2.blur(img, (3, 3))
-        img = cv2.Canny(img, 200, 200)
-        img = cv2.dilate(img, (200, 200), iterations=5)
-
-        img_log_list.append(chessboard_img.copy())
+        img = cv2.Canny(img, 100, 100)
+        img = cv2.dilate(img, (200, 200), iterations=2)
         field_size = detect_field_size(img, img_log_list, 3)
 
         print('Correct getting field size')
-
         img = crop_playground_from_chessboard_image(chessboard_img, field_size)
 
     except Exception as e:
-        cv2.imwrite('./tmp/err.tmp.png', g_log_img)
+        # cv2.imwrite('./tmp/err.tmp.png', img_log_list[0])
+        cv2.imwrite('./tmp/err.tmp.png', img_log_list[1])
         raise Exception("(2): PLAYGROUND EXCEPTION")
 
     return {
