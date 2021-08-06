@@ -11,8 +11,8 @@ import global_configuration
 def main(args):
 
     CONFIGURATION = global_configuration.get()
-    dir_path = '../assets/chess_dataset/train'
-    dir_out_path = '../assets/chess_dataset/generate'
+    dir_path = '../assets/chess_dataset/source'
+    dir_out_path = '../assets/chess_dataset/generate_ts'
 
     for curr_dir_name in os.listdir(dir_path):
         curr_dir = os.path.join(dir_path, curr_dir_name)
@@ -32,10 +32,10 @@ def main(args):
             samples = np.expand_dims(data, 0)
             data_gen = ImageDataGenerator(
                 zoom_range=0.1,
-                width_shift_range=0.15,
-                height_shift_range=0.15,
+                width_shift_range=0.1,
+                height_shift_range=0.1,
                 horizontal_flip=True,
-                rotation_range=25,
+                rotation_range=10,
             )
             it = data_gen.flow(samples, batch_size=32, save_to_dir=curr_dir_out)
             for i in range(50):

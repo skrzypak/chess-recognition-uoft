@@ -149,9 +149,9 @@ if __name__ == '__main__':
             print("Can't receive frame (stream end?). Exiting ...")
             break
 
-        # img = frame
-        img = cv2.imread('../assets/IMG.jpg')
-        im_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = frame
+        # img = cv2.imread('../assets/IMG.jpg')
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
 
         try:
