@@ -47,7 +47,7 @@ def recognition_chessboard_position(playground):
             x = j * w
 
             img_field = playground[y:y + h, x:x + w]
-            img_field = cv2.blur(img_field, (3, 3))
+            # img_field = cv2.blur(img_field, (3, 3))
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
 
             field_data = np \
@@ -114,6 +114,46 @@ def svg_2_png(result_svg_path):
     return cv2.resize(cv2.imread(path_png), (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
 
 
+def exe(source):
+    img = cv2.cvtColor(source, cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
+
+    try:
+        images = cv_chessboard_playground.main({"img": img})
+        img = images['playground']
+
+        print('Getting matrix from chessboard playground')
+        matrix = recognition_chessboard_position(img.copy())
+
+        print('Getting FEN notation from matrix')
+        FEN = get_fen_notation(matrix)
+
+        print('Generate SVG chessboard position from FEN notation')
+        path_svg = fen_2_svg(FEN)
+
+        print('Convert SVG to PNG')
+        result = svg_2_png(path_svg)
+
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+    except Exception as e:
+        print(e)
+        img = cv2.imread('./tmp/err.tmp.png')
+        result = blank_result
+        # images = {'chessboard_log': blank_img, 'playground_log': blank_img}
+
+    cv2.imshow("CHESS DETECTION", gen_stack_images(0.75, (
+        [
+            cv2.resize(img, (512, 512)),
+            cv2.resize(result, (512, 512)),
+        ],
+        # [
+        #     cv2.resize(images['chessboard_log'], (365, 365)),
+        #     cv2.resize(images['playground_log'], (365, 365)),
+        # ]
+    )))
+
+
 if __name__ == '__main__':
 
     if not os.path.isdir('../assets/model/chess-piece.model'):
@@ -139,61 +179,39 @@ if __name__ == '__main__':
     images = {'chessboard_log': blank_img, 'playground_log': blank_img}
     blank_result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
 
+    # Some example images for presentation
+    try:
+        for example in os.listdir('../assets/examples'):
+            exe(cv2.imread('../assets/examples/' + example))
+
+            while cv2.waitKey(1) != ord('e'):
+                if cv2.waitKey(1) == ord('q'):
+                    raise Exception(0)
+                
+    except Exception as e:
+        print(e)
+        pass
+
     ret, frame = cap.read()
     time.sleep(0.5)
 
-    while True:
-        ret, frame = cap.read()
+    try:
+        while True:
+            ret, frame = cap.read()
 
-        if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
-            break
+            if not ret:
+                print("Can't receive frame (stream end?). Exiting ...")
+                break
 
-        img = frame
-        # img = cv2.imread('../assets/examples/0.jpg')
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
+            exe(frame)
 
-        try:
-            images = cv_chessboard_playground.main({"img": img})
-            img = images['playground']
+            while cv2.waitKey(1) != ord('e'):
+                if cv2.waitKey(1) == ord('q'):
+                    raise Exception(0)
 
-            print('Getting matrix from chessboard playground')
-            matrix = recognition_chessboard_position(img.copy())
-
-            print('Getting FEN notation from matrix')
-            FEN = get_fen_notation(matrix)
-
-            print('Generate SVG chessboard position from FEN notation')
-            path_svg = fen_2_svg(FEN)
-
-            print('Convert SVG to PNG')
-            result = svg_2_png(path_svg)
-
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-        except Exception as e:
-            print(e)
-            img = cv2.imread('./tmp/err.tmp.png'), (512, 512)
-            result = blank_result
-            # images = {'chessboard_log': blank_img, 'playground_log': blank_img}
-
-        cv2.imshow("CHESS DETECTION", gen_stack_images(0.75, (
-                [
-                    cv2.resize(img, (512, 512)),
-                    cv2.resize(result, (512, 512)),
-                ],
-                # [
-                #     cv2.resize(images['chessboard_log'], (365, 365)),
-                #     cv2.resize(images['playground_log'], (365, 365)),
-                # ]
-        )))
-
-        while cv2.waitKey(1) != ord('e'):
-            pass
-
-        if cv2.waitKey(1) == ord('q'):
-            break
+    except Exception as e:
+        print(e)
+        pass
 
     cap.release()
     cv2.destroyAllWindows()
