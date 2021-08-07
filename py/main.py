@@ -135,9 +135,9 @@ if __name__ == '__main__':
         print("Cannot open camera")
         exit()
 
-    # blank_img = np.zeros((CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"], 1), np.uint8)
-    # images = {'chessboard_log': blank_img, 'playground_log': blank_img}
-    # result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
+    blank_img = np.zeros((CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"], 1), np.uint8)
+    images = {'chessboard_log': blank_img, 'playground_log': blank_img}
+    blank_result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
 
     ret, frame = cap.read()
     time.sleep(0.5)
@@ -168,27 +168,26 @@ if __name__ == '__main__':
             path_svg = fen_2_svg(FEN)
 
             print('Convert SVG to PNG')
-            img = svg_2_png(path_svg)
+            result = svg_2_png(path_svg)
 
-            img = cv2.resize(img, (512, 512))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
         except Exception as e:
             print(e)
-            img = cv2.imread('./tmp/err.tmp.png')
+            img = cv2.imread('./tmp/err.tmp.png'), (512, 512)
+            result = blank_result
             # images = {'chessboard_log': blank_img, 'playground_log': blank_img}
 
-        # cv2.imshow("AI CHESS DETECTION", gen_stack_images(0.75, (
-        #         [
-        #             cv2.resize(img, (365, 365)),
-        #             cv2.resize(result, (365, 365)),
-        #         ],
-        #         [
-        #             cv2.resize(images['chessboard_log'], (365, 365)),
-        #             cv2.resize(images['playground_log'], (365, 365)),
-        #         ]
-        # )))
-
-        cv2.imshow("CHESS DETECTION", img)
+        cv2.imshow("CHESS DETECTION", gen_stack_images(0.75, (
+                [
+                    cv2.resize(img, (512, 512)),
+                    cv2.resize(result, (512, 512)),
+                ],
+                # [
+                #     cv2.resize(images['chessboard_log'], (365, 365)),
+                #     cv2.resize(images['playground_log'], (365, 365)),
+                # ]
+        )))
 
         while cv2.waitKey(1) != ord('e'):
             pass
