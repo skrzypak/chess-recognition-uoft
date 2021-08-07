@@ -14,6 +14,14 @@ def main(args):
     dir_path = '../assets/chess_dataset/source'
     dir_out_path = '../assets/chess_dataset/generate_ts'
 
+    data_gen = ImageDataGenerator(
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        horizontal_flip=True,
+        vertical_flip=True,
+        rotation_range=15,
+    )
+
     for curr_dir_name in os.listdir(dir_path):
         curr_dir = os.path.join(dir_path, curr_dir_name)
         curr_dir_out = os.path.join(dir_out_path, curr_dir_name)
@@ -30,16 +38,12 @@ def main(args):
             img = cv2.resize(img, (CONFIGURATION['FIELD_IMG_SIZE'], CONFIGURATION['FIELD_IMG_SIZE']))
             data = img_to_array(img)
             samples = np.expand_dims(data, 0)
-            data_gen = ImageDataGenerator(
-                zoom_range=0.1,
-                width_shift_range=0.1,
-                height_shift_range=0.1,
-                horizontal_flip=True,
-                rotation_range=10,
-            )
             it = data_gen.flow(samples, batch_size=32, save_to_dir=curr_dir_out)
-            for i in range(50):
+
+            i = 0
+            while i < 1000:
                 it.next()
+                i = i + 1
 
         print(curr_dir_out, 'DONE')
 

@@ -47,7 +47,7 @@ def recognition_chessboard_position(playground):
             x = j * w
 
             img_field = playground[y:y + h, x:x + w]
-            img_field = cv2.blur(img_field, (5, 5))
+            img_field = cv2.blur(img_field, (3, 3))
             img_field = cv2.resize(img_field, (CONFIGURATION["FIELD_IMG_SIZE"], CONFIGURATION["FIELD_IMG_SIZE"]))
 
             field_data = np \
@@ -135,9 +135,9 @@ if __name__ == '__main__':
         print("Cannot open camera")
         exit()
 
-    blank_img = np.zeros((CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"], 1), np.uint8)
-    images = {'chessboard_log': blank_img, 'playground_log': blank_img}
-    result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
+    # blank_img = np.zeros((CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"], 1), np.uint8)
+    # images = {'chessboard_log': blank_img, 'playground_log': blank_img}
+    # result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
 
     ret, frame = cap.read()
     time.sleep(0.5)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
             break
 
         img = frame
-        # img = cv2.imread('../assets/IMG.jpg')
+        # img = cv2.imread('../assets/examples/0.jpg')
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (CONFIGURATION["ROOT_IMG_SIZE"], CONFIGURATION["ROOT_IMG_SIZE"]))
 
@@ -168,24 +168,27 @@ if __name__ == '__main__':
             path_svg = fen_2_svg(FEN)
 
             print('Convert SVG to PNG')
-            result = svg_2_png(path_svg)
+            img = svg_2_png(path_svg)
 
-            # img = frame
+            img = cv2.resize(img, (512, 512))
+
         except Exception as e:
             print(e)
             img = cv2.imread('./tmp/err.tmp.png')
-            images = {'chessboard_log': blank_img, 'playground_log': blank_img}
+            # images = {'chessboard_log': blank_img, 'playground_log': blank_img}
 
-        cv2.imshow("AI CHESS DETECTION", gen_stack_images(0.75, (
-                [
-                    cv2.resize(img, (365, 365)),
-                    cv2.resize(result, (365, 365)),
-                ],
-                [
-                    cv2.resize(images['chessboard_log'], (365, 365)),
-                    cv2.resize(images['playground_log'], (365, 365)),
-                ]
-        )))
+        # cv2.imshow("AI CHESS DETECTION", gen_stack_images(0.75, (
+        #         [
+        #             cv2.resize(img, (365, 365)),
+        #             cv2.resize(result, (365, 365)),
+        #         ],
+        #         [
+        #             cv2.resize(images['chessboard_log'], (365, 365)),
+        #             cv2.resize(images['playground_log'], (365, 365)),
+        #         ]
+        # )))
+
+        cv2.imshow("CHESS DETECTION", img)
 
         while cv2.waitKey(1) != ord('e'):
             pass

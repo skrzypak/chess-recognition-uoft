@@ -169,8 +169,8 @@ def main(args):
 
     return {
         'playground': img,
-        'chessboard_log': img_log_list[0],
-        'playground_log': img_log_list[1]
+        # 'chessboard_log': img_log_list[0],
+        # 'playground_log': img_log_list[1]
     }
 
 
