@@ -180,6 +180,7 @@ if __name__ == '__main__':
     blank_result = svg_2_png(fen_2_svg('8/8/8/8/8/8/8/8 w - - 0 1'))
 
     # Some example images for presentation
+    '''
     try:
         for example in os.listdir('../assets/examples'):
             exe(cv2.imread('../assets/examples/' + example))
@@ -191,7 +192,8 @@ if __name__ == '__main__':
     except Exception as e:
         print(e)
         pass
-
+    '''
+    
     ret, frame = cap.read()
     time.sleep(0.5)
 
